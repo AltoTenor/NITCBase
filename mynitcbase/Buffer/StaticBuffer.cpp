@@ -24,7 +24,7 @@ int StaticBuffer::getFreeBuffer(int blockNum) {
   // Get free buffer index 
   int allocatedBuffer;
   for (allocatedBuffer = 0; allocatedBuffer < BUFFER_CAPACITY; allocatedBuffer++ ){
-    if ( metainfo[allocatedBuffer].free = true ) break;
+    if ( metainfo[allocatedBuffer].free == true ) break;
   }
 
   metainfo[allocatedBuffer].free = false;
@@ -41,7 +41,7 @@ int StaticBuffer::getBufferNum( int blockNum ){
   }
   int bufferIndex;
   for (bufferIndex = 0; bufferIndex < BUFFER_CAPACITY; bufferIndex++ ){
-    if ( metainfo[bufferIndex].blockNum = blockNum ) break;
+    if ( metainfo[bufferIndex].blockNum == blockNum ) break;
   }
 
   if ( bufferIndex == BUFFER_CAPACITY ) return E_BLOCKNOTINBUFFER;
