@@ -50,9 +50,22 @@ OpenRelTable::OpenRelTable() {
 
 
 
+  // Setting up the Students Relation in the Relation Catalogue Table
+  relCatBlock.getRecord(relCatRecord, RELCAT_SLOTNUM_FOR_ATTRCAT + 1);
+
+  // set the value at RelCacheTable::relCache[ATTRCAT_RELID]
+  RelCacheTable::recordToRelCatEntry(relCatRecord, &relCacheEntry.relCatEntry);
+  relCacheEntry.recId.block = RELCAT_BLOCK;
+  relCacheEntry.recId.slot = RELCAT_SLOTNUM_FOR_ATTRCAT + 1;
+
+  // allocate this on the heap because we want it to persist outside this function
+  RelCacheTable::relCache[ATTRCAT_RELID + 1] = (struct RelCacheEntry*)malloc(sizeof(RelCacheEntry));
+  *(RelCacheTable::relCache[ATTRCAT_RELID + 1]) = relCacheEntry;
+
+
+
+
   /************ Setting up Attribute cache entries ************/
-  // (we need to populate attribute cache with entries for the relation catalog
-  //  and attribute catalog.)
 
   /**** setting up Relation Catalog relation in the Attribute Cache Table ****/
   RecBuffer attrCatBlock(ATTRCAT_BLOCK);
@@ -82,9 +95,12 @@ OpenRelTable::OpenRelTable() {
 
   AttrCacheTable::attrCache[RELCAT_RELID] = listHead;
 
-  /**** setting up Attribute Catalog relation in the Attribute Cache Table ****/
 
-  
+
+
+
+
+  /**** setting up Attribute Catalog relation in the Attribute Cache Table ****/
   prev = nullptr;
   attrCatBlock.getHeader(&attrCatHeader);
 
@@ -103,7 +119,29 @@ OpenRelTable::OpenRelTable() {
   attrCacheEntry -> next = nullptr;
   AttrCacheTable::attrCache[ATTRCAT_RELID] = listHead;
 
+
+
+  /**** setting up Student relation in the Attribute Cache Table ****/
+  prev = nullptr;
+  attrCatBlock.getHeader(&attrCatHeader);
+
+  for (int j = 12; j < 16 ; j++ ) {
+    attrCatBlock.getRecord(attrCatRecord, j);
+    attrCacheEntry = (AttrCacheEntry*)malloc(sizeof(AttrCacheEntry));
+    if ( j == 12 ) listHead = attrCacheEntry;
+
+    AttrCacheTable::recordToAttrCatEntry(attrCatRecord, &attrCacheEntry->attrCatEntry );
+    attrCacheEntry->recId.block = ATTRCAT_BLOCK;
+    attrCacheEntry->recId.slot = j;
+    
+    if ( prev!= nullptr ) prev->next = attrCacheEntry;
+    prev = attrCacheEntry;
+  }
+  attrCacheEntry -> next = nullptr;
+  AttrCacheTable::attrCache[ATTRCAT_RELID + 1] = listHead;
+
 }
+
 
 OpenRelTable::~OpenRelTable() {
   // free all the memory that you allocated in the constructor
