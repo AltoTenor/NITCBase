@@ -74,9 +74,7 @@ OpenRelTable::OpenRelTable() {
   AttrCacheEntry* listHead = nullptr;
   AttrCacheEntry* attrCacheEntry;
   AttrCacheEntry* prev = nullptr;
-  
-  HeadInfo attrCatHeader;
-  attrCatBlock.getHeader(&attrCatHeader);
+
 
   for (int j = 0; j < RELCAT_NO_ATTRS; j++ ) {
     attrCatBlock.getRecord(attrCatRecord, j);
@@ -102,7 +100,6 @@ OpenRelTable::OpenRelTable() {
 
   /**** setting up Attribute Catalog relation in the Attribute Cache Table ****/
   prev = nullptr;
-  attrCatBlock.getHeader(&attrCatHeader);
 
   for (int j = 6; j < RELCAT_NO_ATTRS + 6; j++ ) {
     attrCatBlock.getRecord(attrCatRecord, j);
@@ -123,7 +120,6 @@ OpenRelTable::OpenRelTable() {
 
   /**** setting up Student relation in the Attribute Cache Table ****/
   prev = nullptr;
-  attrCatBlock.getHeader(&attrCatHeader);
 
   for (int j = 12; j < 16 ; j++ ) {
     attrCatBlock.getRecord(attrCatRecord, j);
