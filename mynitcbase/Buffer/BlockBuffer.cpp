@@ -67,6 +67,47 @@ int RecBuffer::getRecord(union Attribute *rec, int slotNum) {
   return SUCCESS;
 }
 
+
+int RecBuffer::setRecord(union Attribute *rec, int slotNum) {
+    unsigned char *bufferPtr;
+    /* get the starting address of the buffer containing the block
+       using loadBlockAndGetBufferPtr(&bufferPtr). */
+    int retval = loadBlockAndGetBufferPtr(&bufferPtr);
+    if ( retval != SUCCESS ) {
+      return retval;
+    }
+
+    HeadInfo head;
+    BlockBuffer::getHeader(&head);
+
+    int numOfAttr = head.numAttrs;
+    int numOfSlots = head.numSlots;
+
+    // if input slotNum is not in the permitted range return E_OUTOFBOUND.
+    if ( slotNum < 0 || slotNum >= numOfSlots ) return E_OUTOFBOUND;
+
+    /* offset bufferPtr to point to the beginning of the record at required
+       slot. the block contains the header, the slotmap, followed by all
+       the records. so, for example,
+       record at slot x will be at bufferPtr + HEADER_SIZE + (x*recordSize)
+       copy the record from `rec` to buffer using memcpy
+       (hint: a record will be of size ATTR_SIZE * numAttrs)
+    */
+    int recordSize = ATTR_SIZE * numOfAttr;
+    memcpy(bufferPtr + HEADER_SIZE + numOfSlots + (slotNum*recordSize), rec, recordSize );
+    // update dirty bit using setDirtyBit()
+
+    int response = StaticBuffer::setDirtyBit(this->blockNum);
+
+    if (response != SUCCESS){
+      printf("Error in setting dirty bit.\n");
+      exit(1);
+    }
+
+    return SUCCESS;
+}
+
+
 /* 
   Used to get the slotmap from a record block
   NOTE: this function expects the caller to allocate memory for `*slotMap`
@@ -96,6 +137,7 @@ int RecBuffer::getSlotMap(unsigned char *slotMap) {
   return SUCCESS;
 }
 
+
 /*
   Used to load a block to the buffer and get a pointer to it.
   NOTE: this function expects the caller to allocate memory for the argument
@@ -104,19 +146,27 @@ int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr) {
   // check whether the block is already present in the buffer using StaticBuffer.getBufferNum()
   int bufferNum = StaticBuffer::getBufferNum(this->blockNum);
 
-  if (bufferNum == E_BLOCKNOTINBUFFER) {
+  if (bufferNum != E_BLOCKNOTINBUFFER) {
+    // If buffer present, increment all others
+    for (int i = 0; i < BUFFER_CAPACITY; i ++ ){
+      if ( StaticBuffer::metainfo[i].free == false ){
+        StaticBuffer::metainfo[i].timeStamp++;
+      }
+    }
+    // Set current to zero 
+    StaticBuffer::metainfo[bufferNum].timeStamp = 0;
+    
+  }
+  else{
     bufferNum = StaticBuffer::getFreeBuffer(this->blockNum);
 
-    if (bufferNum == E_OUTOFBOUND) {
-      return E_OUTOFBOUND;
-    }
+    if (bufferNum == E_OUTOFBOUND) return E_OUTOFBOUND;
     // Do readblock if required block is not present in buffer
     Disk::readBlock(StaticBuffer::blocks[bufferNum], this->blockNum);
   }
   // store the pointer to this buffer (blocks[bufferNum]) in *buffPtr
   *buffPtr = StaticBuffer::blocks[bufferNum];
   // printf("debug2: %u\n",buffPtr);
-
   return SUCCESS;
 }
 

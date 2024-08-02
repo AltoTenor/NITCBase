@@ -297,6 +297,7 @@ int OpenRelTable::closeRel(int relId) {
   // allocated in the OpenRelTable::openRel() function
 
   tableMetaInfo[relId].free = true;
+  strcpy(tableMetaInfo[relId].relName, "");
   RelCacheTable::relCache[relId] = nullptr;
   AttrCacheTable::attrCache[relId] = nullptr;
   return SUCCESS;
