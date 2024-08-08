@@ -132,3 +132,53 @@ int Algebra::select(  char srcRel[ATTR_SIZE],
 
   return SUCCESS;
 }
+
+
+int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE]){
+
+    // Cant insert into RELCAT or ATTRCAT
+    if ( strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0 ){
+      return E_NOTPERMITTED;
+    }
+
+    int relId = OpenRelTable::getRelId(relName);
+
+    // if relation is not open in open relation table, return E_RELNOTOPEN
+    if ( relId == E_RELNOTOPEN) {
+      return E_RELNOTOPEN;
+    }
+
+    RelCatEntry relCatEntry;
+    RelCacheTable::getRelCatEntry(relId, &relCatEntry);
+
+    if ( nAttrs != relCatEntry.numAttrs ){
+      return E_NATTRMISMATCH;
+    }
+
+    Attribute recordValues[relCatEntry.numAttrs];
+
+    /*
+        Converting 2D char array of record values to Attribute array recordValues
+     */
+    // iterate through 0 to nAttrs-1: (let i be the iterator)
+    for (int i = 0; i < nAttrs; i++ ){
+      AttrCatEntry attrCatEntry;
+      AttrCacheTable::getAttrCatEntry(relId, i, &attrCatEntry);
+
+      int type = attrCatEntry.attrType;
+      if (type == NUMBER){
+        // if the char array record[i] can be converted to a number
+        // (check this using isNumber() function)
+        if ( isNumber(record[i]) ){
+          recordValues[i].nVal = atof(record[i]);
+        }
+        else return E_ATTRTYPEMISMATCH;
+      }
+      else if (type == STRING){
+        strcpy(recordValues[i].sVal, record[i]);
+      }
+    }
+
+    int retVal = BlockAccess::insert(relId, recordValues);
+    return retVal;
+}

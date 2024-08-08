@@ -143,7 +143,8 @@ int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]
   Attribute newRelationName;
   strcpy(newRelationName.sVal, newName);
 
-  RecId searchRes = linearSearch(RELCAT_RELID, RELCAT_ATTR_RELNAME, newRelationName, EQ);
+  char relcatAttrName[] = RELCAT_ATTR_RELNAME;
+  RecId searchRes = linearSearch(RELCAT_RELID, relcatAttrName, newRelationName, EQ);
 
   if ( searchRes.slot != -1 || searchRes.block != -1 ){
     return E_RELEXIST;
@@ -157,7 +158,7 @@ int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]
   Attribute oldRelationName; 
   strcpy(oldRelationName.sVal, oldName);
 
-  searchRes = linearSearch(RELCAT_RELID, RELCAT_ATTR_RELNAME, oldRelationName, EQ);
+  searchRes = linearSearch(RELCAT_RELID, relcatAttrName, oldRelationName, EQ);
 
   // If relation with name oldName does not exist (result of linearSearch is {-1, -1})
   //    return E_RELNOTEXIST;
@@ -191,9 +192,11 @@ int BlockAccess::renameRelation(char oldName[ATTR_SIZE], char newName[ATTR_SIZE]
   */
   RelCacheTable::resetSearchIndex(ATTRCAT_RELID);
   int numOfAttr = relCatRecord[RELCAT_NO_ATTRIBUTES_INDEX].nVal;
+  char attrcatAttrName[] = ATTRCAT_ATTR_RELNAME;
+
 
   for (int i = 0; i < numOfAttr; i ++ ){
-    searchRes = linearSearch(ATTRCAT_RELID, ATTRCAT_ATTR_RELNAME , oldRelationName, EQ);
+    searchRes = linearSearch(ATTRCAT_RELID, attrcatAttrName , oldRelationName, EQ);
 
     RecBuffer buf(searchRes.block);
     Attribute attrCatRecord[ATTRCAT_NO_ATTRS];
@@ -216,9 +219,10 @@ int BlockAccess::renameAttribute(char relName[ATTR_SIZE], char oldName[ATTR_SIZE
   RelCacheTable::resetSearchIndex(RELCAT_RELID);
   Attribute relNameAttr;
   strcpy( relNameAttr.sVal, relName);
+  char relcatAttrName[] = RELCAT_ATTR_RELNAME;
 
   // Search for the relation with name relName in relation catalog 
-  RecId searchRes = linearSearch(RELCAT_RELID, RELCAT_ATTR_RELNAME, relNameAttr, EQ);
+  RecId searchRes = linearSearch(RELCAT_RELID, relcatAttrName, relNameAttr, EQ);
   // If relation with name relName does not exist (search returns {-1,-1})
   //    return E_RELNOTEXIST;
   if ( searchRes.slot == -1 && searchRes.block == -1 ){
@@ -241,7 +245,8 @@ int BlockAccess::renameAttribute(char relName[ATTR_SIZE], char oldName[ATTR_SIZE
       relation to find the required attribute */
   while (true) {
     // linear search on the attribute catalog for RelName = relNameAttr
-    RecId searchRecId = linearSearch(ATTRCAT_RELID, ATTRCAT_ATTR_RELNAME, relNameAttr, EQ);
+    char attrcatAttrName[] = ATTRCAT_ATTR_RELNAME;
+    RecId searchRecId = linearSearch(ATTRCAT_RELID, attrcatAttrName, relNameAttr, EQ);
     if ( searchRecId.slot == -1 && searchRecId.block == -1 ){
       break;
     }
@@ -276,6 +281,114 @@ int BlockAccess::renameAttribute(char relName[ATTR_SIZE], char oldName[ATTR_SIZE
     printf("Attribute name could not be changed in AttrCat.\n");
     exit(1);
   }
+
+  return SUCCESS;
+}
+
+int BlockAccess::insert(int relId, Attribute *record) {
+  // get the relation catalog entry from relation cache
+  // ( use RelCacheTable::getRelCatEntry() of Cache Layer)
+  RelCatEntry relCatEntry;  
+  int ret = RelCacheTable::getRelCatEntry(relId, &relCatEntry);
+  int blockNum = relCatEntry.firstBlk;
+
+  // rec_id will be used to store where the new record will be inserted
+  RecId rec_id = {-1, -1};
+
+  int numOfSlots = relCatEntry.numSlotsPerBlk;
+  int numOfAttributes = relCatEntry.numAttrs;
+
+  int prevBlockNum = -1;
+
+  /*
+      Traversing the linked list of existing record blocks of the relation
+      until a free slot is found OR
+      until the end of the list is reached
+  */
+  while (blockNum != -1) {
+    RecBuffer recBuf(blockNum);
+
+    HeadInfo header;
+    recBuf.getHeader(&header);
+
+    unsigned char slotMap[numOfSlots];
+    recBuf.getSlotMap(slotMap);
+
+    for ( int i = 0; i < numOfSlots; i++ ){
+      if (slotMap[i] == SLOT_UNOCCUPIED ){
+        rec_id.slot = i;
+        rec_id.block = blockNum;
+        break;
+      }
+    }
+    if (rec_id.block != -1 && rec_id.slot != -1)break;
+    prevBlockNum = blockNum;
+    blockNum = header.rblock;
+
+  }
+
+  if ( rec_id.slot == -1 && rec_id.block == -1 ){
+    if ( relId == RELCAT_RELID ) return E_MAXRELATIONS;
+
+    RecBuffer newRecBuf;
+    int newBlockNum = newRecBuf.getBlockNum();
+    if (newBlockNum == E_DISKFULL) {
+        return E_DISKFULL;
+    }
+
+    rec_id.block = newBlockNum;
+    rec_id.slot = 0;
+
+    HeadInfo newHeader;
+    newHeader.blockType = REC;
+    newHeader.pblock = -1;
+    newHeader.lblock = prevBlockNum;
+    newHeader.rblock = -1;
+    newHeader.numEntries = 0;
+    newHeader.numAttrs = numOfAttributes;
+    newHeader.numSlots = numOfSlots;
+    newRecBuf.setHeader(&newHeader);
+
+    unsigned char slotMap[numOfSlots];
+    for (int i=0;i<numOfSlots;i++){
+      slotMap[i] = SLOT_UNOCCUPIED;
+    }
+    newRecBuf.setSlotMap(slotMap);
+
+    if (prevBlockNum != -1){
+      RecBuffer prevBlock(prevBlockNum);
+
+      HeadInfo prevHeader;
+      prevBlock.getHeader(&prevHeader);
+      prevHeader.rblock = rec_id.block;
+      prevBlock.setHeader(&prevHeader);
+    }
+    else{
+      relCatEntry.firstBlk = rec_id.block;
+      RelCacheTable::setRelCatEntry(relId, &relCatEntry);
+    }
+    relCatEntry.lastBlk = rec_id.block;
+    RelCacheTable::setRelCatEntry(relId, &relCatEntry);
+  }
+
+  RecBuffer block(rec_id.block);
+  block.setRecord(record, rec_id.slot);
+
+  
+  unsigned char slotMap[numOfSlots];
+  block.getSlotMap(slotMap);
+  slotMap[rec_id.slot] = SLOT_OCCUPIED;
+  block.setSlotMap(slotMap);
+
+
+  HeadInfo header;
+  block.getHeader(&header);
+  header.numEntries ++ ;
+  block.setHeader(&header);
+
+  relCatEntry.numRecs ++ ;
+  RelCacheTable::setRelCatEntry(relId, &relCatEntry);
+
 
   return SUCCESS;
 }

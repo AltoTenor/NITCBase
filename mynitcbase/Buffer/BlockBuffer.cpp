@@ -31,7 +31,6 @@ BlockBuffer::BlockBuffer(char blockType){
 
 }
 
-
 // calls the parent class constructor
 RecBuffer::RecBuffer(int blockNum) : BlockBuffer::BlockBuffer(blockNum) {}
 
@@ -61,7 +60,6 @@ int BlockBuffer::getHeader(struct HeadInfo *head) {
   return SUCCESS;
 }
 
-
 int BlockBuffer::setHeader(struct HeadInfo *head){
 
   unsigned char *bufferPtr;
@@ -71,7 +69,7 @@ int BlockBuffer::setHeader(struct HeadInfo *head){
 
   // cast bufferPtr to type HeadInfo*
   struct HeadInfo *bufferHeader = (struct HeadInfo *)bufferPtr;
-  bufferHeader->blockType = head->blockType;
+  // bufferHeader->blockType = head->blockType;
   bufferHeader->lblock = head->lblock;
   bufferHeader->rblock = head->rblock;
   bufferHeader->pblock = head->pblock;
@@ -83,7 +81,6 @@ int BlockBuffer::setHeader(struct HeadInfo *head){
   if ( ret != SUCCESS ) return ret;
   return SUCCESS;
 }
-
 
 // load the record at slotNum into the argument pointer
 int RecBuffer::getRecord(union Attribute *rec, int slotNum) {
@@ -113,7 +110,6 @@ int RecBuffer::getRecord(union Attribute *rec, int slotNum) {
 
   return SUCCESS;
 }
-
 
 int RecBuffer::setRecord(union Attribute *rec, int slotNum) {
     /* get the starting address of the buffer containing the block
@@ -154,7 +150,6 @@ int RecBuffer::setRecord(union Attribute *rec, int slotNum) {
     return SUCCESS;
 }
 
-
 /* 
   Used to get the slotmap from a record block
   NOTE: this function expects the caller to allocate memory for `*slotMap`
@@ -184,6 +179,24 @@ int RecBuffer::getSlotMap(unsigned char *slotMap) {
   return SUCCESS;
 }
 
+int RecBuffer::setSlotMap(unsigned char *slotMap) {
+  unsigned char *bufferPtr;
+  /* get the starting address of the buffer containing the block using */
+  int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+  if (ret != SUCCESS) return ret;
+
+  HeadInfo header;
+  BlockBuffer::getHeader(&header);
+
+  int numSlots = header.numAttrs;
+
+  // Copy new slotmap to the Static Buffer with updated values
+  memcpy(bufferPtr + HEADER_SIZE, slotMap, numSlots);
+
+  ret = StaticBuffer::setDirtyBit(this->blockNum);
+  if ( ret != SUCCESS ) return ret;
+  return SUCCESS;
+}
 
 /*
   Used to load a block to the buffer and get a pointer to it.
@@ -216,7 +229,6 @@ int BlockBuffer::loadBlockAndGetBufferPtr(unsigned char **buffPtr) {
   // printf("debug2: %u\n",buffPtr);
   return SUCCESS;
 }
-
 
 int BlockBuffer::setBlockType(int blockType){
 
@@ -281,6 +293,9 @@ int BlockBuffer::getFreeBlock(int blockType){
     return blockNum;
 }
 
+int BlockBuffer::getBlockNum(){
+  return this->blockNum;
+}
 
 // Used to perform operations and comparisons in SQL queries
 int compareAttrs(union Attribute attr1, union Attribute attr2, int attrType) {
