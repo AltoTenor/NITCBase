@@ -172,9 +172,7 @@ int RecBuffer::getSlotMap(unsigned char *slotMap) {
   unsigned char *slotMapInBuffer = bufferPtr + HEADER_SIZE;
 
   // copy the values from `slotMapInBuffer` to `slotMap` (size is `slotCount`)
-  for (int i = 0; i < slotCount; i ++ ){
-    slotMap[i] = slotMapInBuffer[i];
-  }
+  memcpy(slotMap, slotMapInBuffer, slotCount);
 
   return SUCCESS;
 }
@@ -188,14 +186,13 @@ int RecBuffer::setSlotMap(unsigned char *slotMap) {
   HeadInfo header;
   BlockBuffer::getHeader(&header);
 
-  int numSlots = header.numAttrs;
+  int numSlots = header.numSlots;
 
   // Copy new slotmap to the Static Buffer with updated values
   memcpy(bufferPtr + HEADER_SIZE, slotMap, numSlots);
 
   ret = StaticBuffer::setDirtyBit(this->blockNum);
-  if ( ret != SUCCESS ) return ret;
-  return SUCCESS;
+  return ret;
 }
 
 /*
@@ -297,6 +294,22 @@ int BlockBuffer::getBlockNum(){
   return this->blockNum;
 }
 
+void BlockBuffer::releaseBlock(){
+
+  // if blockNum is INVALID_BLOCKNUM (-1), or it is invalidated already, do nothing
+  if ( this->blockNum == INVALID_BLOCKNUM || StaticBuffer::blockAllocMap[this->blockNum] == UNUSED_BLK) return;
+
+  // Try to get the buffer number if block is loaded in 
+  int buffNum = StaticBuffer::getBufferNum(this->blockNum);
+  if ( buffNum != E_BLOCKNOTINBUFFER ){
+    StaticBuffer::metainfo[buffNum].free = true;
+  }
+
+  // Indicate block is free in block allocation map 
+  StaticBuffer::blockAllocMap[this->blockNum] = UNUSED_BLK;
+  this->blockNum = -1;
+}
+
 // Used to perform operations and comparisons in SQL queries
 int compareAttrs(union Attribute attr1, union Attribute attr2, int attrType) {
 
@@ -310,3 +323,7 @@ int compareAttrs(union Attribute attr1, union Attribute attr2, int attrType) {
     else if (diff < 0) return -1;
     else return 0;
 }
+
+
+
+
