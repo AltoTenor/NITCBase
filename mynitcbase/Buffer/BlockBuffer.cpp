@@ -188,7 +188,7 @@ int RecBuffer::setSlotMap(unsigned char *slotMap) {
   HeadInfo header;
   BlockBuffer::getHeader(&header);
 
-  int numSlots = header.numAttrs;
+  int numSlots = header.numSlots;
 
   // Copy new slotmap to the Static Buffer with updated values
   memcpy(bufferPtr + HEADER_SIZE, slotMap, numSlots);
