@@ -278,8 +278,6 @@ int OpenRelTable::openRel(char relName[ATTR_SIZE]) {
   return relId;
 }
 
-
-
 int OpenRelTable::closeRel(int relId) {
   if ( relId == RELCAT_RELID || relId == ATTRCAT_RELID ) {
     return E_NOTPERMITTED;
@@ -326,7 +324,6 @@ int OpenRelTable::closeRel(int relId) {
   AttrCacheTable::attrCache[relId] = nullptr;
   return SUCCESS;
 }
-
 
 OpenRelTable::~OpenRelTable() {
 
