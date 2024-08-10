@@ -7,4 +7,4 @@ SELECT * FROM QuizMarksCG INTO Scholars WHERE quizMarks > 85;
 open table Scholars;
 SELECT rollNo,name FROM Scholars INTO KeralaScholars WHERE location = Kerala;
 SELECT rollNo,name FROM Scholars INTO GujaratScholars WHERE location = Gujarat;
-SELECT rollNo,name FROM Scholars INTO TelanganaScholars WHERE location = Telangana;
+SELECT rollNo,name FROM Scholars INTO TelScholars WHERE location = Telangana;
