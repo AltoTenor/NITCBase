@@ -310,6 +310,84 @@ void BlockBuffer::releaseBlock(){
   this->blockNum = -1;
 }
 
+// New Block
+IndBuffer::IndBuffer(char blockType) : BlockBuffer(blockType){}
+
+// Load Block
+IndBuffer::IndBuffer(int blockNum) : BlockBuffer(blockNum){}
+
+// New Block
+IndInternal::IndInternal() : IndBuffer('I'){}
+
+// Load Block
+IndInternal::IndInternal(int blockNum) : IndBuffer(blockNum){}
+
+// New Block
+IndLeaf::IndLeaf() : IndBuffer('L'){}
+
+// Load Block
+IndLeaf::IndLeaf(int blockNum) : IndBuffer(blockNum){}
+
+int IndInternal::getEntry(void *ptr, int indexNum) {
+  if ( indexNum < 0 || indexNum >= MAX_KEYS_INTERNAL ) return E_OUTOFBOUND;
+
+  unsigned char *bufferPtr;
+  int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+  if ( ret != SUCCESS ) return ret;
+  
+  // typecast the void pointer to an internal entry pointer
+  struct InternalEntry *internalEntry = (struct InternalEntry *)ptr;
+
+  /*
+  - copy the entries from the indexNum`th entry to *internalEntry
+  - make sure that each field is copied individually as in the following code
+  - the lChild and rChild fields of InternalEntry are of type int32_t
+  - int32_t is a type of int that is guaranteed to be 4 bytes across every
+    C++ implementation. sizeof(int32_t) = 4
+  */
+
+  /* the indexNum'th entry will begin at an offset of
+      HEADER_SIZE + (indexNum * (sizeof(int) + ATTR_SIZE) )
+      where sizeof(int) -> Child pointer size
+      ATTR_SIZE -> Record Pointer size
+      from bufferPtr */
+  unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * 20);
+
+  memcpy(&(internalEntry->lChild), entryPtr, sizeof(int32_t));
+  memcpy(&(internalEntry->attrVal), entryPtr + 4, sizeof(Attribute));
+  memcpy(&(internalEntry->rChild), entryPtr + 20, 4);
+
+  return SUCCESS;
+}
+
+int IndLeaf::getEntry(void *ptr, int indexNum) {
+
+  if ( indexNum < 0 || indexNum >= MAX_KEYS_INTERNAL ) return E_OUTOFBOUND;
+
+  unsigned char *bufferPtr;
+  int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+  if ( ret != SUCCESS ) return ret;
+
+  /* the indexNum'th entry will begin at an offset of
+      HEADER_SIZE + (indexNum * LEAF_ENTRY_SIZE)  from bufferPtr */
+  unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * LEAF_ENTRY_SIZE);
+
+  // copy the indexNum'th Index entry in buffer to memory ptr using memcpy
+  memcpy((struct Index *)ptr, entryPtr, LEAF_ENTRY_SIZE);
+
+  return SUCCESS;
+}
+
+// NOT IMPLEMENTED
+int IndInternal::setEntry(void *ptr, int indexNum) {
+  return 0;
+}
+
+// NOT IMPLEMENTED
+int IndLeaf::setEntry(void *ptr, int indexNum) {
+  return 0;
+}
+
 // Used to perform operations and comparisons in SQL queries
 int compareAttrs(union Attribute attr1, union Attribute attr2, int attrType) {
 

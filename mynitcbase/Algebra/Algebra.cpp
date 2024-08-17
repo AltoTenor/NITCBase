@@ -111,65 +111,6 @@ int Algebra::select(  char srcRel[ATTR_SIZE],
   }
 
 
-    /************************
-  The following code prints the contents of a relation directly to the output
-  console. Direct console output is not permitted by the actual the NITCbase
-  specification and the output can only be inserted into a new relation. We will
-  be modifying it in the later stages to match the specification.
-  ************************/
-
-  // printf("|");
-  // for (int i = 0; i < relCatEntry.numAttrs; ++i) {
-  //   AttrCatEntry attrCatEntry;
-  //   AttrCacheTable::getAttrCatEntry(srcRelId, i, &attrCatEntry);
-  //   printf(" %s |", attrCatEntry.attrName);
-  // }
-  // printf("\n");
-
-  // while (true) {
-
-  //   RecId searchRes = BlockAccess::linearSearch(srcRelId, attr, attrVal, op);
-
-  //   if (searchRes.block != -1 && searchRes.slot != -1) {
-
-  //     // get the record at searchRes using BlockBuffer.getRecord
-  //     RecBuffer block( searchRes.block );
-
-  //     HeadInfo header;
-  //     block.getHeader(&header);
-
-  //     Attribute record[header.numAttrs];
-  //     block.getRecord( record, searchRes.slot );
-  //     // print the attribute values in the same format as above
-  //     printf("|");
-  //     for (int i = 0; i < relCatEntry.numAttrs; ++i)
-  //     {
-  //         AttrCatEntry attrCatEntry;
-  //         // get attrCatEntry at offset i using AttrCacheTable::getAttrCatEntry()
-  //         int response = AttrCacheTable::getAttrCatEntry(srcRelId, i, &attrCatEntry);
-  //         if (response != SUCCESS)
-  //         {
-  //             printf("Invalid Attribute ID.\n");
-  //             exit(1);
-  //         }
-
-  //         if (attrCatEntry.attrType == NUMBER)
-  //         {
-  //             printf(" %d |", (int) record[i].nVal);
-  //         }
-  //         else
-  //         {
-  //             printf(" %s |", record[i].sVal);
-  //         }
-  //     }
-  //     printf("\n");
-  //   } 
-  //   else {
-  //     break;
-  //   }
-  // }
-
-
 
   /*** Creating and opening the target relation ***/
   // Prepare arguments for createRel() in the following way:
@@ -189,15 +130,18 @@ int Algebra::select(  char srcRel[ATTR_SIZE],
     attr_types[i] = srcAttrCatEntry.attrType;
   }
 
+  // Create the relation for target relation
   ret = Schema::createRel(targetRel, src_nAttrs, attr_names, attr_types);
   if ( ret != SUCCESS ) return ret;
 
   // Open the newly created target relation
   int tarRelId = OpenRelTable::openRel(targetRel);
 
-  /* If opening fails, delete the target relation by calling Schema::deleteRel()
-      and return the error value returned from openRel() */
-  if ( tarRelId < 0 ) return tarRelId;
+  // If opening fails, delete the target relation
+  if ( tarRelId < 0 ) {
+    Schema::deleteRel(targetRel);
+    return tarRelId;
+  }
 
   /*** Selecting and inserting records into the target relation ***/
   /* Before calling the search function, reset the search to start from the
@@ -216,7 +160,7 @@ int Algebra::select(  char srcRel[ATTR_SIZE],
   */
   //-----------------------B+TREE-------------------------------------------------------------------
   RelCacheTable::resetSearchIndex(srcRelId);
-  // AttrCacheTable::resetSearchIndex(srcRelId, attr);
+  AttrCacheTable::resetSearchIndex(srcRelId, attr);
 
   // read every record that satisfies the condition by repeatedly calling
   // BlockAccess::search() until there are no more records to be read
@@ -227,11 +171,10 @@ int Algebra::select(  char srcRel[ATTR_SIZE],
     if ( ret != SUCCESS ){
       Schema::closeRel(targetRel);
       Schema::deleteRel(targetRel);
-      printf("Failed to insert\n");
       return ret;
     }
   }
-
+  
   // Close the relation 
   Schema::closeRel(targetRel);
   return SUCCESS;

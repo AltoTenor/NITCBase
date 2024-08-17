@@ -405,10 +405,18 @@ int BlockAccess::search(  int relId,
                           Attribute attrVal, 
                           int op ) {
 
-  // Try Linear Searching
   RecId recId;
-  recId = linearSearch(relId, attrName, attrVal, op);
   
+  AttrCatEntry attrCatEntry;
+  int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrCatEntry);
+  if ( ret != SUCCESS ) return ret;
+
+  // Linear search if no root block mentioned
+  if ( attrCatEntry.rootBlock == -1 ) recId = linearSearch(relId, attrName, attrVal, op);
+  // Index exists for this attribute
+  else recId = BPlusTree::bPlusSearch(relId, attrName, attrVal, op);
+
+  // No record found
   if ( recId.slot == -1 && recId.block == -1 )
     return E_NOTFOUND;
 

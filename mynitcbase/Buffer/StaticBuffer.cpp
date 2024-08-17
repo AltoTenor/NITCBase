@@ -34,7 +34,6 @@ StaticBuffer::~StaticBuffer() {
   }
 }
 
-
 int StaticBuffer::getFreeBuffer(int blockNum) {
   if (blockNum < 0 || blockNum > DISK_BLOCKS) {
     return E_OUTOFBOUND;
@@ -77,7 +76,6 @@ int StaticBuffer::getFreeBuffer(int blockNum) {
   return allocatedBuffer;
 }
 
-
 // Retrieve index of Block stored in buffer already
 int StaticBuffer::getBufferNum( int blockNum ){
   if (blockNum < 0 || blockNum > DISK_BLOCKS) {
@@ -93,12 +91,22 @@ int StaticBuffer::getBufferNum( int blockNum ){
 }
 
 int StaticBuffer::setDirtyBit(int blockNum){
-    int bufIndex = getBufferNum(blockNum);
+  int bufIndex = getBufferNum(blockNum);
 
-    if ( bufIndex == E_BLOCKNOTINBUFFER ) return E_BLOCKNOTINBUFFER;
-    else if ( bufIndex == E_OUTOFBOUND ) return E_OUTOFBOUND;
-    else
-      metainfo[bufIndex].dirty = true;
+  if ( bufIndex == E_BLOCKNOTINBUFFER ) return E_BLOCKNOTINBUFFER;
+  else if ( bufIndex == E_OUTOFBOUND ) return E_OUTOFBOUND;
+  else
+    metainfo[bufIndex].dirty = true;
 
-    return SUCCESS;
+  return SUCCESS;
+}
+
+// Returns the block type of the block corresponding to the input block number
+// This function is used to find the block type without the creation of a block object
+int StaticBuffer::getStaticBlockType(int blockNum){
+  // Check if blockNum is valid (non zero and less than number of disk blocks)
+  if (blockNum < 0 || blockNum > DISK_BLOCKS) return E_OUTOFBOUND;
+
+  // Access the entry in block allocation map corresponding to the blockNum argument
+  return (int)blockAllocMap[blockNum];
 }
