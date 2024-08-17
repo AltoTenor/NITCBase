@@ -391,8 +391,30 @@ int BlockAccess::insert(int relId, Attribute *record) {
   relCatEntry.numRecs ++ ;
   RelCacheTable::setRelCatEntry(relId, &relCatEntry);
 
+  /* B+ Tree Insertions */
+  int flag = SUCCESS;
+  // Iterate over all the attributes of the relation
+  // (let attrOffset be iterator ranging from 0 to numOfAttributes-1)
+  for ( int attrOffset = 0; attrOffset < numOfAttributes; attrOffset++ ){
 
-  return SUCCESS;
+    AttrCatEntry attrCatBuf;
+    AttrCacheTable::getAttrCatEntry(relId, attrOffset, &attrCatBuf);
+
+    int rootBlock = attrCatBuf.rootBlock;
+
+    if ( rootBlock != -1 ){
+      /* insert the new record into the attribute's bplus tree using
+        BPlusTree::bPlusInsert()*/
+      int retVal = BPlusTree::bPlusInsert(relId, attrCatBuf.attrName, record[attrOffset], rec_id);
+
+      // index for this attribute has been destroyed
+      if (retVal == E_DISKFULL) {
+        flag = E_INDEX_BLOCKS_RELEASED;
+      }
+    }
+  }
+
+  return flag;
 }
 
 /*
@@ -570,15 +592,14 @@ int BlockAccess::deleteRelation(char relName[ATTR_SIZE]) {
       //  need to handle the case of the linked list becoming empty - i.e
       //  every block of the attribute catalog gets released.)
 
-      // call releaseBlock()
       attrCatBlock.releaseBlock();
     }
 
     // (the following part is only relevant once indexing has been implemented)
     // if index exists for the attribute (rootBlock != -1), call bplus destroy
-    // if (rootBlock != -1) {
-        // delete the bplus tree rooted at rootBlock using BPlusTree::bPlusDestroy()
-    // }
+    if (rootBlock != -1) {
+      BPlusTree::bPlusDestroy(rootBlock);
+    }
   }
 
   /*** Delete the entry corresponding to the relation from relation catalog ***/

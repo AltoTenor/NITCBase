@@ -378,14 +378,57 @@ int IndLeaf::getEntry(void *ptr, int indexNum) {
   return SUCCESS;
 }
 
-// NOT IMPLEMENTED
 int IndInternal::setEntry(void *ptr, int indexNum) {
-  return 0;
+  
+  if ( indexNum < 0 || indexNum >= MAX_KEYS_LEAF ) return E_OUTOFBOUND;
+
+  unsigned char *bufferPtr;
+  int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+  if ( ret != SUCCESS ) return ret;
+
+  // typecast the void pointer to an internal entry pointer
+  struct InternalEntry *internalEntry = (struct InternalEntry *)ptr;
+
+  /*
+  - copy the entries from *internalEntry to the indexNum`th entry
+  - make sure that each field is copied individually as in the following code
+  - the lChild and rChild fields of InternalEntry are of type int32_t
+  - int32_t is a type of int that is guaranteed to be 4 bytes across every
+    C++ implementation. sizeof(int32_t) = 4
+  */
+
+  /* the indexNum'th entry will begin at an offset of
+      HEADER_SIZE + (indexNum * (sizeof(int) + ATTR_SIZE) )
+      from bufferPtr */
+
+  unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * 20);
+
+  memcpy(entryPtr, &(internalEntry->lChild), 4);
+  memcpy(entryPtr + 4, &(internalEntry->attrVal), ATTR_SIZE);
+  memcpy(entryPtr + 20, &(internalEntry->rChild), 4);
+
+  ret = StaticBuffer::setDirtyBit(this->blockNum);
+  if ( ret != SUCCESS ) return ret;
+
+  return SUCCESS;
 }
 
-// NOT IMPLEMENTED
 int IndLeaf::setEntry(void *ptr, int indexNum) {
-  return 0;
+
+  if ( indexNum < 0 || indexNum >= MAX_KEYS_LEAF ) return E_OUTOFBOUND;
+
+  unsigned char *bufferPtr;
+  int ret = loadBlockAndGetBufferPtr(&bufferPtr);
+  if ( ret != SUCCESS ) return ret;
+
+  // copy the Index at ptr to indexNum'th entry in the buffer using memcpy
+  unsigned char *entryPtr = bufferPtr + HEADER_SIZE + (indexNum * LEAF_ENTRY_SIZE);
+  memcpy(entryPtr, (struct Index *)ptr, LEAF_ENTRY_SIZE);
+
+  ret = StaticBuffer::setDirtyBit(this->blockNum);
+  if ( ret != SUCCESS ) return ret;
+
+  return SUCCESS;
 }
 
 // Used to perform operations and comparisons in SQL queries
@@ -401,7 +444,3 @@ int compareAttrs(union Attribute attr1, union Attribute attr2, int attrType) {
     else if (diff < 0) return -1;
     else return 0;
 }
-
-
-
-

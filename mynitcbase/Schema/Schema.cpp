@@ -121,7 +121,6 @@ int Schema::createRel(char relName[],int nAttrs, char attrs[][ATTR_SIZE],int att
   return SUCCESS;
 }
 
-
 int Schema::deleteRel(char *relName) {
   if ( strcmp(relName, ATTRCAT_RELNAME) == 0 || strcmp(relName, RELCAT_RELNAME) == 0 )
     return E_NOTPERMITTED;
@@ -142,4 +141,46 @@ int Schema::deleteRel(char *relName) {
     correct, it should not reach that point. That error could only occur
     if the BlockBuffer was initialized with an invalid block number.
   */
+}
+
+int createIndex(char relName[ATTR_SIZE],char attrName[ATTR_SIZE]){
+
+  if ( strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME ) == 0 ){
+    return E_NOTPERMITTED;
+  }
+
+  int relId = OpenRelTable::getRelId(relName);
+  if ( relId < 0 ) return relId;
+
+  // create a bplus tree using BPlusTree::bPlusCreate() and return the value
+  return BPlusTree::bPlusCreate(relId, attrName);
+}
+
+int Schema::dropIndex(char *relName, char *attrName) {
+
+  if ( strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME ) == 0 ){
+    return E_NOTPERMITTED;
+  }
+
+  // Make sure relation is open
+  int relId = OpenRelTable::getRelId(relName);
+  if ( relId < 0 ) return relId;
+
+  // Fetch attribute catalogue entry
+  AttrCatEntry attrCatBuf;
+  int ret = AttrCacheTable::getAttrCatEntry(relId, attrName, &attrCatBuf);
+  if ( ret != SUCCESS ) return E_ATTRNOTEXIST;
+
+  // Try to retrieve rootblock
+  int rootBlock = attrCatBuf.rootBlock;
+  if ( rootBlock == -1 ) return E_NOINDEX;
+
+  // destroy the bplus tree rooted at rootBlock using BPlusTree::bPlusDestroy()
+  BPlusTree::bPlusDestroy(rootBlock);
+
+  // set rootBlock = -1 in the attribute cache entry of the attribute
+  attrCatBuf.rootBlock = -1;
+  AttrCacheTable::setAttrCatEntry(relId, attrName, &attrCatBuf);
+
+  return SUCCESS;
 }

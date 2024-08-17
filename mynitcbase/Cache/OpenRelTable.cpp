@@ -279,24 +279,14 @@ int OpenRelTable::openRel(char relName[ATTR_SIZE]) {
 }
 
 int OpenRelTable::closeRel(int relId) {
-  if ( relId == RELCAT_RELID || relId == ATTRCAT_RELID ) {
-    return E_NOTPERMITTED;
-  }
 
-  if ( relId < 0 || relId >= MAX_OPEN ) {
-    return E_OUTOFBOUND;
-  }
-
-  if ( tableMetaInfo[relId].free ) {
-    return E_RELNOTOPEN;
-  }
-
+  if ( relId == RELCAT_RELID || relId == ATTRCAT_RELID ) return E_NOTPERMITTED;
+  if ( relId < 0 || relId >= MAX_OPEN ) return E_OUTOFBOUND;
+  if ( tableMetaInfo[relId].free )return E_RELNOTOPEN;
 
   /****** Releasing the Relation Cache entry of the relation ******/
 
-  if ( RelCacheTable::relCache[relId]->dirty == true )
-  {
-
+  if ( RelCacheTable::relCache[relId]->dirty == true ){
     /* Get the Relation Catalog entry from RelCacheTable::relCache*/
     Attribute relCatRecord[RELCAT_NO_ATTRS];
     RelCatEntry relCatEntry = RelCacheTable::relCache[relId]->relCatEntry;
@@ -306,18 +296,33 @@ int OpenRelTable::closeRel(int relId) {
     // declaring an object of RecBuffer class to write back to the buffer
     RecBuffer relCatBlock(RelCacheTable::relCache[relId]->recId.block);
     relCatBlock.setRecord(relCatRecord, RelCacheTable::relCache[relId]->recId.slot );
-
   }
+
+  // free the memory dynamically alloted to this Relation Cache entry
+  // and assign nullptr to that entry
 
   /****** Releasing the Attribute Cache entry of the relation ******/
 
-  // (because we are not modifying the attribute cache at this stage,
-  // write-back is not required. We will do it in subsequent
-  // stages when it becomes needed)
+  for ( AttrCacheEntry *curEntry = AttrCacheTable::attrCache[relId];
+        curEntry != nullptr;
+        curEntry = curEntry->next){
+    if ( curEntry->dirty == true ){
 
-  // free the memory allocated in the relation and attribute caches which was
-  // allocated in the OpenRelTable::openRel() function
+      AttrCatEntry attrCatEntry = curEntry->attrCatEntry;
+      union Attribute record[ATTRCAT_NO_ATTRS];
 
+      // Convert into record from struct to write back
+      AttrCacheTable::attrCatEntryToRecord(&attrCatEntry, record);
+      
+      // Write back to buffer from cache
+      RecBuffer attrCatBlk(curEntry->recId.block);
+      attrCatBlk.setRecord(record, curEntry->recId.slot);
+    }
+  }
+
+  /****** Updating metadata in the Open Relation Table of the relation  ******/
+
+  //free the relIdth entry of the tableMetaInfo.
   tableMetaInfo[relId].free = true;
   strcpy(tableMetaInfo[relId].relName, "");
   RelCacheTable::relCache[relId] = nullptr;
