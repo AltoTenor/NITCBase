@@ -2,6 +2,7 @@
 
 #include <cstring>
 
+int BPlusTree::numOfComparisons;
 
 /** 
  * @brief 
@@ -129,6 +130,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
 
         internalBlk.getEntry(&intEntry, ind);
         int ret = compareAttrs(intEntry.attrVal, attrVal, attrCatEntry.attrType );
+        BPlusTree::numOfComparisons++;
         if (((op==EQ || op==GE) && ret >= 0)|| (op==GT && ret > 0)) break;
 
         ind++;
@@ -164,6 +166,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
       // int cmpVal = /* comparison between leafEntry's attribute value
       //                 and input attrVal using compareAttrs()*/
       int cmpVal = compareAttrs(leafEntry.attrVal, attrVal, attrCatEntry.attrType);
+      BPlusTree::numOfComparisons++;
 
       // (entry satisfying the condition found)
       if (

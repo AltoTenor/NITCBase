@@ -165,6 +165,7 @@ int Algebra::select(  char srcRel[ATTR_SIZE],
   // read every record that satisfies the condition by repeatedly calling
   // BlockAccess::search() until there are no more records to be read
 
+  BPlusTree::numOfComparisons = 0;
   while (BlockAccess::search(srcRelId, record, attr, attrVal, op) == SUCCESS ) {
 
     int ret = BlockAccess::insert(tarRelId, record);
@@ -175,6 +176,7 @@ int Algebra::select(  char srcRel[ATTR_SIZE],
     }
   }
   
+  printf("Number of Comparisons: %d\n", BPlusTree::numOfComparisons);
   // Close the relation 
   Schema::closeRel(targetRel);
   return SUCCESS;

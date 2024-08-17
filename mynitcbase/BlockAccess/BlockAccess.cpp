@@ -105,7 +105,7 @@ RecId BlockAccess::linearSearch(int relId,
         current record */
     Attribute currRecordAttr = searchRecord[attrCatBuf.offset];
     int cmpVal = compareAttrs( currRecordAttr, attrVal, attrCatBuf.attrType );
-
+    BPlusTree::numOfComparisons++;
     /* Next task is to check whether this record satisfies the given condition.
         It is determined based on the output of previous comparison and
         the op value received.
@@ -412,9 +412,13 @@ int BlockAccess::search(  int relId,
   if ( ret != SUCCESS ) return ret;
 
   // Linear search if no root block mentioned
-  if ( attrCatEntry.rootBlock == -1 ) recId = linearSearch(relId, attrName, attrVal, op);
+  if ( attrCatEntry.rootBlock == -1 ) {
+    recId = linearSearch(relId, attrName, attrVal, op);
+  }
   // Index exists for this attribute
-  else recId = BPlusTree::bPlusSearch(relId, attrName, attrVal, op);
+  else {
+    recId = BPlusTree::bPlusSearch(relId, attrName, attrVal, op);
+  }
 
   // No record found
   if ( recId.slot == -1 && recId.block == -1 )
