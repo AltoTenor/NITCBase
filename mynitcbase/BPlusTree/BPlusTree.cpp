@@ -33,7 +33,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
   int block, index;
 
   // search is done for the first time
-  if ( searchIndex.block == -1 && searchIndex.index == -1 ) {
+  if ( searchIndex.block == -1 || searchIndex.index == -1 ) {
 
     // start the search from the first entry of root.
     block = attrCatEntry.rootBlock;
@@ -81,7 +81,7 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
       and the test condition in the following loop will fail)
   */
 
-  while(StaticBuffer::getStaticBlockType(block) != IND_INTERNAL ) {
+  while(StaticBuffer::getStaticBlockType(block) == IND_INTERNAL ) {
 
     // load the block into internalBlk using IndInternal::IndInternal().
     IndInternal internalBlk(block);
