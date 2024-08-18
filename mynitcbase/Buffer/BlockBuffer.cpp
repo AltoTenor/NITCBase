@@ -380,7 +380,7 @@ int IndLeaf::getEntry(void *ptr, int indexNum) {
 
 int IndInternal::setEntry(void *ptr, int indexNum) {
   
-  if ( indexNum < 0 || indexNum >= MAX_KEYS_LEAF ) return E_OUTOFBOUND;
+  if ( indexNum < 0 || indexNum >= MAX_KEYS_INTERNAL ) return E_OUTOFBOUND;
 
   unsigned char *bufferPtr;
   int ret = loadBlockAndGetBufferPtr(&bufferPtr);
@@ -408,9 +408,7 @@ int IndInternal::setEntry(void *ptr, int indexNum) {
   memcpy(entryPtr + 20, &(internalEntry->rChild), 4);
 
   ret = StaticBuffer::setDirtyBit(this->blockNum);
-  if ( ret != SUCCESS ) return ret;
-
-  return SUCCESS;
+  return ret;
 }
 
 int IndLeaf::setEntry(void *ptr, int indexNum) {
