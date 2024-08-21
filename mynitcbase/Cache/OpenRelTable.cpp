@@ -274,7 +274,7 @@ int OpenRelTable::openRel(char relName[ATTR_SIZE]) {
   // update the relIdth entry of the tableMetaInfo with free as false and relName as the input.
   tableMetaInfo[relId].free = false;
   strcpy(tableMetaInfo[relId].relName, relName);
-  printf("Relid: %d\n", relId);
+  // printf("Relid: %d\n", relId);
   return relId;
 }
 

@@ -358,7 +358,6 @@ int Algebra::join(  char srcRelation1[ATTR_SIZE],
   int numOfAttributes1 = relCatEntry1.numAttrs;
   int numOfAttributes2 = relCatEntry2.numAttrs;
 
-
   // Check that there are no duplicate entries 
   AttrCatEntry t1,t2;
   for ( int i=0; i < numOfAttributes1; i++ ){
@@ -429,12 +428,15 @@ int Algebra::join(  char srcRelation1[ATTR_SIZE],
   // if openRel() fails (No free entries left in the Open Relation Table)
   if ( targetRelId < 0 ){
     Schema::deleteRel(targetRelation);
-    return ret;
+    return targetRelId;
   }
 
   Attribute record1[numOfAttributes1];
   Attribute record2[numOfAttributes2];
   Attribute targetRecord[numOfAttributesInTarget];
+
+  RelCacheTable::resetSearchIndex(srcRelId1);
+  AttrCacheTable::resetSearchIndex(srcRelId1, attribute1);
 
   // this loop is to get every record of the srcRelation1 one by one
   while (BlockAccess::project(srcRelId1, record1) == SUCCESS) {
@@ -451,7 +453,7 @@ int Algebra::join(  char srcRelation1[ATTR_SIZE],
         for (int i = 0; i < numOfAttributes1; i++){
           targetRecord[j++] = record1[i];
         }
-        for (int i = 0; i < numOfAttributes1; i++){
+        for (int i = 0; i < numOfAttributes2; i++){
           if ( i != attrCatEntry2.offset ) targetRecord[j++] = record2[i];
         }
 

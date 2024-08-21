@@ -260,7 +260,6 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
         recBuf.getRecord(record, slot);
 
         RecId recId{ block, slot};
-        printf("%d %d\n", block, slot);
         // insert the attribute value corresponding to attrName from the record into the B+ tree
         ret = BPlusTree::bPlusInsert(relId, attrName, record[attrCatBuf.offset], recId );
 
