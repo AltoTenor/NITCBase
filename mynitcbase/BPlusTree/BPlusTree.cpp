@@ -721,6 +721,7 @@ int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[]) {
   }
   int type = StaticBuffer::getStaticBlockType(internalEntries[0].rChild);
 
+  // Reassigning parents from left Child to Right Child for the entries that got shifted
   for ( int i = (MAX_KEYS_INTERNAL)/2; i <= MAX_KEYS_INTERNAL; i++ ) {
     BlockBuffer child(internalEntries[i].rChild);
 
