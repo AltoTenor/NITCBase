@@ -203,6 +203,12 @@ RecId BPlusTree::bPlusSearch(int relId, char attrName[ATTR_SIZE], Attribute attr
   return RecId {-1,-1};
 }
 
+/// @brief
+/// Used to initialize the rootBlock and call Insert for each record present in the relation
+/// Iteratively inserts each record in the BPlusTree starting from relCache firstBlock
+/// @param relId 
+/// @param attrName 
+/// @return Success/Error Code
 int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
 
   int ret;
@@ -278,6 +284,9 @@ int BPlusTree::bPlusCreate(int relId, char attrName[ATTR_SIZE]) {
   return SUCCESS;
 }
 
+/// @brief Recursively release blocks till leaf nodes.
+/// @param rootBlockNum 
+/// @return Status Code
 int BPlusTree::bPlusDestroy(int rootBlockNum) {
   if ( rootBlockNum < 0 || rootBlockNum >= DISK_BLOCKS ) return E_OUTOFBOUND;
 
@@ -324,6 +333,12 @@ int BPlusTree::bPlusDestroy(int rootBlockNum) {
   }
 }
 
+/// @brief Finds the leaf to insert and tries to insert if rootBlock exists
+/// @param relId 
+/// @param attrName 
+/// @param attrVal 
+/// @param recId 
+/// @return Success/Error Code
 int BPlusTree::bPlusInsert(int relId, char attrName[ATTR_SIZE], Attribute attrVal, RecId recId) {
   // get the attribute cache entry corresponding to attrName
   // using AttrCacheTable::getAttrCatEntry().
@@ -368,6 +383,11 @@ int BPlusTree::bPlusInsert(int relId, char attrName[ATTR_SIZE], Attribute attrVa
   return SUCCESS;
 }
 
+/// @brief Traverse down following conditions from rootBlock until block type = LEAF
+/// @param rootBlock 
+/// @param attrVal 
+/// @param attrType 
+/// @return Block Number of Leaf
 int BPlusTree::findLeafToInsert(int rootBlock, Attribute attrVal, int attrType) {
   int blockNum = rootBlock;
   int type = StaticBuffer::getStaticBlockType(blockNum);
@@ -408,6 +428,13 @@ int BPlusTree::findLeafToInsert(int rootBlock, Attribute attrVal, int attrType) 
   return blockNum;
 }
 
+
+/// @brief Rearranges indices to fit new entry. If no space splitsLeaf and propagates up.
+/// @param relId 
+/// @param attrName 
+/// @param blockNum 
+/// @param indexEntry 
+/// @return Success/Error Code
 int BPlusTree::insertIntoLeaf(int relId, char attrName[ATTR_SIZE], int blockNum, Index indexEntry) {
 
   int ret;
@@ -497,6 +524,10 @@ int BPlusTree::insertIntoLeaf(int relId, char attrName[ATTR_SIZE], int blockNum,
   return SUCCESS;
 }
 
+/// @brief Allocate new Right Block and set indices in both left and right leaf blocks
+/// @param leafBlockNum 
+/// @param indices 
+/// @return Right Block Number
 int BPlusTree::splitLeaf(int leafBlockNum, Index indices[]) {
 
   IndLeaf rightBlk;
@@ -538,6 +569,12 @@ int BPlusTree::splitLeaf(int leafBlockNum, Index indices[]) {
   return rightBlkNum;
 }
 
+/// @brief Rearranges indices to fit new entry. If no space splitsInternal and propagates up
+/// @param relId 
+/// @param attrName 
+/// @param intBlockNum 
+/// @param intEntry 
+/// @return Success/Error Code
 int BPlusTree::insertIntoInternal(int relId, char attrName[ATTR_SIZE], int intBlockNum, InternalEntry intEntry) {
 
   int ret;
@@ -641,6 +678,10 @@ int BPlusTree::insertIntoInternal(int relId, char attrName[ATTR_SIZE], int intBl
   return SUCCESS;
 }
 
+/// @brief Allocate new Right Block and set entries in both left and right leaf blocks
+/// @param intBlockNum 
+/// @param internalEntries 
+/// @return Right Block Number
 int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[]) {
   IndInternal rightBlk;
   IndInternal leftBlk(intBlockNum);
@@ -690,6 +731,15 @@ int BPlusTree::splitInternal(int intBlockNum, InternalEntry internalEntries[]) {
   return rightBlkNum;
 }
 
+/// @brief 
+/// Initializes new rootBlock of type Internal Node. Sets up LChild, RChild pointers and entry.
+/// Also sets up the parent pointers for LChild and RChild. Reassigns rootBlock in attrCache.
+/// @param relId 
+/// @param attrName 
+/// @param attrVal 
+/// @param lChild 
+/// @param rChild 
+/// @return Status Code
 int BPlusTree::createNewRoot(int relId, char attrName[ATTR_SIZE], Attribute attrVal, int lChild, int rChild) {
 
   int ret;

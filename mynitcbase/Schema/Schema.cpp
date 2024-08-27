@@ -4,6 +4,9 @@
 #include <cstring>
 #include <cstdio>
 
+/// @brief Opening a relation provided a string of relation
+/// @param relName 
+/// @return relId inside the Cache
 int Schema::openRel(char relName[ATTR_SIZE]) {
   int ret = OpenRelTable::openRel(relName);
 
@@ -18,6 +21,9 @@ int Schema::openRel(char relName[ATTR_SIZE]) {
   return ret;
 } 
 
+/// @brief Close the relation provided a string of relation
+/// @param relName 
+/// @return Status Code
 int Schema::closeRel(char relName[ATTR_SIZE]) {
   // relation is relation catalog or attribute catalog cant close it
   if ( strcmp(relName, RELCAT_RELNAME) == 0 || strcmp(relName, ATTRCAT_RELNAME) == 0  ) {

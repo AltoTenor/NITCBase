@@ -22,6 +22,11 @@ bool isNumber(char *str) {
   return ret == 1 && len == strlen(str);
 }
 
+/// @brief Performs primary checks and inserts using BlockAccess::Insert
+/// @param relName 
+/// @param nAttrs 
+/// @param record 
+/// @return Status Code
 int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE]){
 
     // Cant insert into RELCAT or ATTRCAT
@@ -71,14 +76,13 @@ int Algebra::insert(char relName[ATTR_SIZE], int nAttrs, char record[][ATTR_SIZE
     return retVal;
 }
 
-/* used to select all the records that satisfy a condition.
-the arguments of the function are
-- srcRel - the source relation we want to select from
-- targetRel - the relation we want to select into. (ignore for now)
-- attr - the attribute that the condition is checking
-- op - the operator of the condition
-- strVal - the value that we want to compare against (represented as a string)
-*/
+/// @brief Used to select all the records that satisfy a condition
+/// @param srcRel the source relation we want to select from
+/// @param targetRel the relation we want to select into
+/// @param attr the attribute that the condition is checking
+/// @param op the operator of the condition
+/// @param strVal the value that we want to compare against (represented as a string)
+/// @return Status Code
 int Algebra::select(  char srcRel[ATTR_SIZE], 
                       char targetRel[ATTR_SIZE], 
                       char attr[ATTR_SIZE], 
@@ -180,8 +184,10 @@ int Algebra::select(  char srcRel[ATTR_SIZE],
   return SUCCESS;
 }
 
-
-// Project all columns into another relation (Copy relation basically)
+/// @brief Project all columns into another relation (Copy relation basically)
+/// @param srcRel string corresponding to Source Relation Name
+/// @param targetRel string corresponding to Target new Relation Name
+/// @return Status Code
 int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE]) {
 
   int ret;
@@ -245,7 +251,12 @@ int Algebra::project(char srcRel[ATTR_SIZE], char targetRel[ATTR_SIZE]) {
   return SUCCESS;
 }
 
-// Porject only specified columns into another relation
+/// @brief Project only specified columns into another relation
+/// @param srcRel string containing source relation name
+/// @param targetRel string containing target relation name
+/// @param tar_nAttrs number of attributes in the target relation
+/// @param tar_Attrs array of attributes required in the target relation
+/// @return Status Code
 int Algebra::project( char srcRel[ATTR_SIZE], 
                       char targetRel[ATTR_SIZE], 
                       int tar_nAttrs, 
@@ -319,6 +330,15 @@ int Algebra::project( char srcRel[ATTR_SIZE],
   return SUCCESS;
 }
 
+/// @brief Join two source relations into one target relation
+/// 
+/// Should always the format SELECT * FROM S1 JOIN S2 INTO Tar where S1.x=S2.y;
+/// @param srcRelation1 S1 -> string of first source relation 
+/// @param srcRelation2 S2 -> string of second source relation 
+/// @param targetRelation Tar -> string of target relation
+/// @param attribute1 x -> join attribute of first source relation
+/// @param attribute2 y -> join attribute of second source relation
+/// @return Status Code
 int Algebra::join(  char srcRelation1[ATTR_SIZE], 
                     char srcRelation2[ATTR_SIZE], 
                     char targetRelation[ATTR_SIZE], 
