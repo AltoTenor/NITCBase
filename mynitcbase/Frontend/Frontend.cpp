@@ -175,7 +175,8 @@ int Frontend::custom_function(int argc, char argv[][ATTR_SIZE]) {
 
         for (int i=0;i<numEntries;i++){
           internalBlk.getEntry(&entry, i);
-          printf("%s ",entry.attrVal.sVal);
+          if (attrCatBuf.attrType == STRING ) printf("%s ",entry.attrVal.sVal);
+          else printf("%f ",entry.attrVal.nVal);
           q.push({ entry.rChild, lvl+1 });
         }
       }
@@ -187,7 +188,8 @@ int Frontend::custom_function(int argc, char argv[][ATTR_SIZE]) {
         Index entry;
         for (int i=0;i<numEntries;i++){
           leafBlk.getEntry(&entry, i);
-          printf("%s ",entry.attrVal.sVal);
+          if (attrCatBuf.attrType == STRING ) printf("%s ",entry.attrVal.sVal);
+          else printf("%0.2f ",entry.attrVal.nVal);
         }
       }
 
