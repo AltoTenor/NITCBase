@@ -2,7 +2,7 @@
 
 #include <cstring>
 #include <iostream>
-
+#include <bits/stdc++.h>
 int Frontend::create_table(char relname[ATTR_SIZE], int no_attrs, char attributes[][ATTR_SIZE], int type_attrs[]) {
   return Schema::createRel(relname, no_attrs, attributes, type_attrs);
 }
@@ -141,6 +141,57 @@ int Frontend::custom_function(int argc, char argv[][ATTR_SIZE]) {
   // argv stores every token delimited by space and comma
 
   // implement whatever you desire
+  if ( argc == 2 ){
+    int relId = OpenRelTable::getRelId(argv[0]);
+    AttrCatEntry attrCatBuf;
+    int ret = AttrCacheTable::getAttrCatEntry(relId, argv[1], &attrCatBuf);
+    // printf("%s %s %d\n",argv[0], argv[1], ret);
+    int rootBlock = attrCatBuf.rootBlock;
+    if ( rootBlock == -1 ) printf("No index\n");
 
+    
+    std::queue <std::pair<int,int>> q;
+    int curlvl = -1;
+    q.push({rootBlock,0});
+    while(!q.empty()){
+      int blockNum = q.front().first;
+      int lvl = q.front().second;
+      if ( lvl != curlvl ){
+        curlvl = lvl;
+        printf(" \nLevel %d\n ", lvl );
+      }
+      q.pop();
+      int type = StaticBuffer::getStaticBlockType(blockNum);
+      if ( type == IND_INTERNAL ){
+        IndInternal internalBlk(blockNum);
+        HeadInfo internalHeader;
+        internalBlk.getHeader(&internalHeader);
+        int numEntries = internalHeader.numEntries;
+        // printf("T %d\n",internalHeader.numEntries);
+
+        InternalEntry entry;
+        internalBlk.getEntry(&entry, 0);
+        q.push({ entry.lChild, lvl+1 });
+
+        for (int i=0;i<numEntries;i++){
+          internalBlk.getEntry(&entry, i);
+          printf("%s ",entry.attrVal.sVal);
+          q.push({ entry.rChild, lvl+1 });
+        }
+      }
+      else{
+        IndLeaf leafBlk(blockNum);
+        HeadInfo leafHeader;
+        leafBlk.getHeader(&leafHeader);
+        int numEntries = leafHeader.numEntries;
+        Index entry;
+        for (int i=0;i<numEntries;i++){
+          leafBlk.getEntry(&entry, i);
+          printf("%s ",entry.attrVal.sVal);
+        }
+      }
+
+    }
+  }
   return SUCCESS;
 }

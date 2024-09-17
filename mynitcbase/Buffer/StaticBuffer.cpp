@@ -47,7 +47,7 @@ int StaticBuffer::getFreeBuffer(int blockNum) {
   }
 
   // Get free buffer index 
-  int allocatedBuffer;
+  int allocatedBuffer, maxt;
   for (allocatedBuffer = 0; allocatedBuffer < BUFFER_CAPACITY; allocatedBuffer++ ){
     if ( metainfo[allocatedBuffer].free == true ) break;
   }
@@ -55,10 +55,12 @@ int StaticBuffer::getFreeBuffer(int blockNum) {
   // No buffers free
   if ( allocatedBuffer == BUFFER_CAPACITY ){
     allocatedBuffer = -2;
+    maxt = -1;
     // Find max timestamp buffer
     for (int i = 0; i < BUFFER_CAPACITY; i++ ){
-      if ( metainfo[i].timeStamp > allocatedBuffer ){
+      if ( metainfo[i].timeStamp > maxt ){
         allocatedBuffer = i;
+        maxt = metainfo[i].timeStamp;
       }
     }
     // Write back if dirty block chosen
